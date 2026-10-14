@@ -1,0 +1,42 @@
+# TableTalk — PHP 8.x / MySQL
+# Bestanden die Git niet mag volgen.
+
+# --- Besturingssysteem ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# --- IDE en editor ---
+.vscode/
+.cursor/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# --- Gevoelige configuratie (database-inloggegevens) ---
+.env
+.env.*
+!.env.example
+config.local.php
+**/config.local.php
+*.local.php
+auth.json
+
+# --- PHP / Composer ---
+/vendor/
+composer.phar
+
+# --- Logs, cache en tijdelijke bestanden ---
+*.log
+/cache/
+/tmp/
+/sessions/
