@@ -1,0 +1,11 @@
+[
+    {
+        "id": "1792519767776",
+        "vestiging_id": 1,
+        "score": 4,
+        "categorie": "Eten",
+        "toelichting": "was fantastisch",
+        "status": "Nieuw",
+        "aangemaakt_op": "2026-10-20 20:09:27"
+    }
+]

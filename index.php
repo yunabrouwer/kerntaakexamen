@@ -1,135 +1,84 @@
 <?php
-declare(strict_types=1);
+require_once 'includes/functions.php';
 
-require_once __DIR__ . '/includes/functions.php';
-require_once __DIR__ . '/config/database.php';
+$vestiging_id = isset($_GET['vestiging_id']) ? (int)$_GET['vestiging_id'] : 1;
+$error = '';
 
-startSecureSession();
-$pdo = getDatabaseConnection();
-$isPost = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
-$slug = sanitizeInput($isPost ? ($_POST['vestiging'] ?? '') : ($_GET['vestiging'] ?? ''));
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $score = isset($_POST['score']) ? (int)$_POST['score'] : 0;
+    $categorie = isset($_POST['categorie']) ? $_POST['categorie'] : '';
+    $toelichting = isset($_POST['toelichting']) ? $_POST['toelichting'] : '';
 
-if ($slug === '' || !preg_match('/\A[a-z0-9-]+\z/', $slug)) {
-    http_response_code(404);
-    exit('Deze vestiging is niet gevonden.');
-}
-
-$statement = dbQuery($pdo, 'SELECT id, naam, slug FROM vestigingen WHERE slug = ?', [$slug]);
-$establishment = $statement->fetch();
-if (!$establishment) {
-    http_response_code(404);
-    exit('Deze vestiging is niet gevonden.');
-}
-
-$categories = ['Service', 'Kwaliteit', 'Sfeer', 'Prijs-kwaliteit', 'Overig'];
-$score = sanitizeInput($isPost ? ($_POST['score'] ?? '') : '');
-$category = sanitizeInput($isPost ? ($_POST['categorie'] ?? '') : '');
-$description = sanitizeInput($isPost ? ($_POST['beschrijving'] ?? '') : '');
-$errors = [];
-
-if ($isPost) {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? null)) {
-        http_response_code(403);
-        exit('Je aanvraag kon niet worden gecontroleerd. Vernieuw de pagina en probeer opnieuw.');
-    }
-
-    if (!preg_match('/\A[1-5]\z/', $score)) {
-        $errors[] = 'Kies een score van 1 tot en met 5.';
-    }
-    if (!in_array($category, $categories, true)) {
-        $errors[] = 'Kies een categorie uit de lijst.';
-    }
-    if ($description === '' || mb_strlen($description) > 5000) {
-        $errors[] = 'Vul een toelichting in van maximaal 5000 tekens.';
-    }
-
-    if ($errors === []) {
-        dbQuery(
-            $pdo,
-            'INSERT INTO feedback (vestiging_id, score, categorie, beschrijving)
-             VALUES (?, ?, ?, ?)',
-            [(int) $establishment['id'], (int) $score, $category, $description]
-        );
-        header('Location: thanks.php', true, 303);
+    // Validatie: alles is verplicht
+    if ($score < 1 || $score > 5 || empty($categorie) || empty($toelichting)) {
+        $error = 'Alle velden zijn verplicht. Vul de survey volledig in.';
+    } else {
+        // Sla direct op in het tekstbestand
+        save_feedback($score, $categorie, $toelichting, $vestiging_id);
+        header("Location: thanks.php");
         exit;
     }
 }
-
-$pageTitle = 'Deel je ervaring';
-require __DIR__ . '/includes/header.php';
 ?>
-<main>
-    <section class="card survey-card">
-        <h1>Hoe was je ervaring?</h1>
-        <p class="muted">Deel je feedback met <?= escapeHtml($establishment['naam']) ?>. Je reactie helpt ons verbeteren.</p>
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TableTalk - Feedback</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { max-width: 400px; width: 100%; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #2E7D32; }
+        .error { color: red; margin-bottom: 15px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .rating { display: flex; justify-content: space-between; flex-direction: row-reverse; margin-bottom: 15px; }
+        .rating input { display: none; }
+        .rating label { font-size: 30px; color: #ccc; cursor: pointer; }
+        .rating input:checked ~ label, .rating label:hover, .rating label:hover ~ label { color: #2E7D32; }
+        button { width: 100%; background: #2E7D32; color: white; padding: 12px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>TableTalk</h2>
+    <p style="text-align:center;">Uw mening telt bij <strong>Proef Restaurant</strong></p>
+    
+    <?php if ($error): ?>
+        <div class="error"><?php echo $error; ?></div>
+    <?php endif; ?>
 
-        <?php if ($errors !== []): ?>
-            <div class="error" role="alert">
-                <p>Controleer de volgende punten:</p>
-                <ul>
-                    <?php foreach ($errors as $error): ?>
-                        <li><?= escapeHtml($error) ?></li>
-                    <?php endforeach; ?>
-                </ul>
+    <form action="" method="POST">
+        <div class="form-group">
+            <label>Hoe was uw ervaring? (1-5 sterren)</label>
+            <div class="rating">
+                <input type="radio" id="star5" name="score" value="5"><label for="star5">★</label>
+                <input type="radio" id="star4" name="score" value="4"><label for="star4">★</label>
+                <input type="radio" id="star3" name="score" value="3"><label for="star3">★</label>
+                <input type="radio" id="star2" name="score" value="2"><label for="star2">★</label>
+                <input type="radio" id="star1" name="score" value="1"><label for="star1">★</label>
             </div>
-        <?php endif; ?>
+        </div>
 
-        <form method="post" action="index.php?vestiging=<?= rawurlencode($slug) ?>">
-            <input type="hidden" name="csrf_token" value="<?= escapeHtml(csrfToken()) ?>">
-            <input type="hidden" name="vestiging" value="<?= escapeHtml($slug) ?>">
+        <div class="form-group">
+            <label for="categorie">Categorie</label>
+            <select name="categorie" id="categorie">
+                <option value="">Kies een categorie...</option>
+                <option value="Eten">Eten</option>
+                <option value="Bediening">Bediening</option>
+                <option value="Sfeer">Sfeer</option>
+            </select>
+        </div>
 
-            <fieldset class="field rating-field">
-                <legend>Je score <span aria-hidden="true">*</span></legend>
-                <div class="rating-options">
-                    <?php for ($rating = 1; $rating <= 5; $rating++): ?>
-                        <label class="rating-option" data-score="<?= $rating ?>">
-                            <input type="radio" name="score" value="<?= $rating ?>" required
-                                <?= $score === (string) $rating ? 'checked' : '' ?>>
-                            <span><?= $rating ?></span>
-                        </label>
-                    <?php endfor; ?>
-                </div>
-                <small class="muted">1 = zeer ontevreden, 5 = zeer tevreden</small>
-            </fieldset>
+        <div class="form-group">
+            <label for="toelichting">Toelichting</label>
+            <textarea name="toelichting" id="toelichting" rows="4" placeholder="Vertel ons meer over uw ervaring..."></textarea>
+        </div>
 
-            <div class="field">
-                <label for="categorie">Categorie <span aria-hidden="true">*</span></label>
-                <select id="categorie" name="categorie" required>
-                    <option value="">Kies een categorie</option>
-                    <?php foreach ($categories as $option): ?>
-                        <option value="<?= escapeHtml($option) ?>" <?= $category === $option ? 'selected' : '' ?>>
-                            <?= escapeHtml($option) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="field">
-                <label for="beschrijving">Je toelichting <span aria-hidden="true">*</span></label>
-                <textarea id="beschrijving" name="beschrijving" rows="6" maxlength="5000"
-                    required><?= escapeHtml($description) ?></textarea>
-            </div>
-
-            <button type="submit">Feedback versturen</button>
-        </form>
-    </section>
-</main>
-<style>
-    .survey-card { max-width: 650px; margin: 0 auto; }
-    .rating-field { padding: 0; border: 0; }
-    .rating-field legend { margin-bottom: 10px; font-weight: 700; }
-    .rating-options { display: flex; gap: 10px; margin: 12px 0; }
-    .rating-option { flex: 1; cursor: pointer; }
-    .rating-option input { position: absolute; width: 1px; height: 1px; opacity: 0; }
-    .rating-option span {
-        display: grid; min-height: 48px; place-items: center; border: 2px solid currentColor;
-        border-radius: 8px; font-size: 1.15rem; font-weight: 700;
-    }
-    .rating-option[data-score="1"], .rating-option[data-score="2"] { color: #c62828; }
-    .rating-option[data-score="3"] { color: #ef8c00; }
-    .rating-option[data-score="4"], .rating-option[data-score="5"] { color: #2E7D32; }
-    .rating-option input:checked + span { background: #173a37; border-color: #173a37; color: #fff; }
-    .rating-option input:focus-visible + span { outline: 3px solid #173a37; outline-offset: 2px; }
-    textarea { resize: vertical; }
-</style>
-<?php require __DIR__ . '/includes/footer.php'; ?>
+        <button type="submit">Feedback versturen</button>
+    </form>
+</div>
+</body>
+</html>
