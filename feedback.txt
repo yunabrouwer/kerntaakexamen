@@ -1,5 +1,32 @@
 [
     {
+        "id": "1792521321169",
+        "vestiging_id": 4,
+        "score": 2,
+        "categorie": "Sfeer",
+        "toelichting": "saai",
+        "status": "Nieuw",
+        "aangemaakt_op": "2026-10-20 20:35:21"
+    },
+    {
+        "id": "1792521305817",
+        "vestiging_id": 1,
+        "score": 5,
+        "categorie": "Bediening",
+        "toelichting": "goed",
+        "status": "Nieuw",
+        "aangemaakt_op": "2026-10-20 20:35:05"
+    },
+    {
+        "id": "1792520795405",
+        "vestiging_id": 1,
+        "score": 3,
+        "categorie": "Bediening",
+        "toelichting": "ja was wel oke",
+        "status": "Nieuw",
+        "aangemaakt_op": "2026-10-20 20:26:35"
+    },
+    {
         "id": "1792519767776",
         "vestiging_id": 1,
         "score": 4,

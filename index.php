@@ -1,60 +1,27 @@
 <?php
-<<<<<<< HEAD
 require_once 'includes/functions.php';
 
-$vestiging_id = isset($_GET['vestiging_id']) ? (int)$_GET['vestiging_id'] : 1;
+$vestigingen = get_vestigingen();
+$vestiging_id = isset($_GET['vestiging_id']) ? (int)$_GET['vestiging_id'] : 0;
+if (!isset($vestigingen[$vestiging_id])) {
+    $vestiging_id = 0;
+}
 $error = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $score = isset($_POST['score']) ? (int)$_POST['score'] : 0;
+    $vestiging_id = isset($_POST['vestiging_id']) ? (int)$_POST['vestiging_id'] : 0;
     $categorie = isset($_POST['categorie']) ? $_POST['categorie'] : '';
     $toelichting = isset($_POST['toelichting']) ? $_POST['toelichting'] : '';
 
     // Validatie: alles is verplicht
-    if ($score < 1 || $score > 5 || empty($categorie) || empty($toelichting)) {
+    if ($score < 1 || $score > 5 || !isset($vestigingen[$vestiging_id]) || empty($categorie) || empty($toelichting)) {
         $error = 'Alle velden zijn verplicht. Vul de survey volledig in.';
     } else {
         // Sla direct op in het tekstbestand
         save_feedback($score, $categorie, $toelichting, $vestiging_id);
         header("Location: thanks.php");
         exit;
-=======
-require_once 'config/database.php';
-require_once 'includes/functions.php';
-
-$vestiging_id = isset($_GET['vestiging_id']) ? (int)$_GET['vestiging_id'] : 0;
-$error = '';
-
-// Controleer of de vestiging bestaat en actief is in de database
-$stmt = $pdo->prepare("SELECT * FROM vestigingen WHERE id = ? AND actief = 1");
-$stmt->execute([$vestiging_id]);
-$vestiging = $stmt->fetch();
-
-if (!$vestiging) {
-    die("<h1>Fout</h1><p>Deze vestiging is niet gevonden.</p>");
-}
-
-// Verwerk het formulier zodra de gast op verzenden drukt
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!verify_csrf_token($_POST['csrf_token'])) {
-        $error = 'Inzending is niet veilig verklaard (CSRF fout).';
-    } else {
-        $score = isset($_POST['score']) ? (int)$_POST['score'] : 0;
-        $categorie = isset($_POST['categorie']) ? $_POST['categorie'] : '';
-        $toelichting = isset($_POST['toelichting']) ? $_POST['toelichting'] : '';
-
-        // Validatie: alle velden zijn verplicht volgens de functionele eisen
-        if ($score < 1 || $score > 5 || empty($categorie) || empty($toelichting)) {
-            $error = 'Alle velden zijn verplicht. Vul de survey volledig in.';
-        } else {
-            // Sla de feedback veilig op met Prepared Statements
-            $stmt = $pdo->prepare("INSERT INTO feedback (vestiging_id, score, categorie, toelichting, status) VALUES (?, ?, ?, ?, 'Nieuw')");
-            $stmt->execute([$vestiging_id, $score, $categorie, $toelichting]);
-            
-            header("Location: thanks.php");
-            exit;
-        }
->>>>>>> 4d3db418d8247204f7d5c557ce917929eb3610a2
     }
 }
 ?>
@@ -75,33 +42,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .rating { display: flex; justify-content: space-between; flex-direction: row-reverse; margin-bottom: 15px; }
         .rating input { display: none; }
         .rating label { font-size: 30px; color: #ccc; cursor: pointer; }
-<<<<<<< HEAD
         .rating input:checked ~ label, .rating label:hover, .rating label:hover ~ label { color: #2E7D32; }
-=======
-        .rating input:checked ~ label { color: #2E7D32; } /* Groen voor 4-5 sterren */
->>>>>>> 4d3db418d8247204f7d5c557ce917929eb3610a2
         button { width: 100%; background: #2E7D32; color: white; padding: 12px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
     </style>
 </head>
 <body>
 <div class="container">
     <h2>TableTalk</h2>
-<<<<<<< HEAD
     <p style="text-align:center;">Uw mening telt bij <strong>Proef Restaurant</strong></p>
-=======
-    <p style="text-align:center;">Uw mening telt bij <strong><?php echo sanitize($vestiging['naam']); ?></strong></p>
->>>>>>> 4d3db418d8247204f7d5c557ce917929eb3610a2
     
     <?php if ($error): ?>
         <div class="error"><?php echo $error; ?></div>
     <?php endif; ?>
 
     <form action="" method="POST">
-<<<<<<< HEAD
-=======
-        <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
-        
->>>>>>> 4d3db418d8247204f7d5c557ce917929eb3610a2
         <div class="form-group">
             <label>Hoe was uw ervaring? (1-5 sterren)</label>
             <div class="rating">
@@ -111,6 +65,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="radio" id="star2" name="score" value="2"><label for="star2">★</label>
                 <input type="radio" id="star1" name="score" value="1"><label for="star1">★</label>
             </div>
+        </div>
+
+        <div class="form-group">
+            <label for="vestiging_id">Vestiging</label>
+            <select name="vestiging_id" id="vestiging_id" required>
+                <option value="">Kies een vestiging...</option>
+                <?php foreach ($vestigingen as $id => $naam): ?>
+                    <option value="<?php echo $id; ?>" <?php echo $vestiging_id === $id ? 'selected' : ''; ?>>
+                        <?php echo sanitize($naam); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
         </div>
 
         <div class="form-group">

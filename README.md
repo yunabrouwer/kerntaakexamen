@@ -10,6 +10,10 @@ TableTalk is a small, mobile-friendly feedback application built with PHP 8.2+ a
 
 ## Install
 
+The feedback form offers the locations configured in `get_vestigingen()` in
+`includes/functions.php`. Update that list to change the available locations;
+the dashboard shows each location's reviews and average score separately.
+
 1. Create the database and tables by running `schema.sql` with a MySQL account allowed to create databases.
 2. Configure the database connection with these environment variables:
    - `TABLETALK_DB_HOST` (default: `127.0.0.1`)
