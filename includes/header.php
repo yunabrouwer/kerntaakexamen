@@ -10,6 +10,7 @@ $establishmentName = $establishment['naam'] ?? $establishment['vestiging_naam'] 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= escapeHtml($pageTitle) ?> | TableTalk</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
     <style>
         :root {
             color-scheme: light;
@@ -85,8 +86,16 @@ $establishmentName = $establishment['naam'] ?? $establishment['vestiging_naam'] 
         label { font-weight: 600; }
         .field { margin: 18px 0; }
         .field > label { display: block; margin-bottom: 7px; }
+        fieldset.field { padding: 0; border: 0; }
+        fieldset.field legend { margin-bottom: 7px; font-weight: 600; }
         .error { color: #a42121; }
         .success { color: #236b42; }
+        .rating { display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: 6px; }
+        .rating input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+        .rating label { color: #9aa6ad; font-size: 2rem; cursor: pointer; }
+        .rating input:checked ~ label, .rating label:hover, .rating label:hover ~ label { color: #236b42; }
+        .rating input:focus-visible + label { outline: 3px solid #9ad0a1; outline-offset: 2px; }
+        button:disabled { cursor: wait; opacity: .7; }
         .table-wrap { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px 10px; border-bottom: 1px solid #e7ecef; text-align: left; }

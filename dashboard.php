@@ -1,119 +1,87 @@
 <?php
-require_once 'includes/functions.php';
+require_once __DIR__ . '/includes/functions.php';
 
-$all_feedback = get_all_feedback();
-$visible_feedback = $all_feedback;
-$filter = isset($_GET['filter']) ? $_GET['filter'] : 'all';
-
-// Filter de feedback op basis van de GET-parameter
-if ($filter === 'negative') {
-    $visible_feedback = array_filter($all_feedback, function($item) {
-        return $item['score'] <= 2;
-    });
+$pageTitle = 'Manager dashboard';
+$manager = null;
+$feedback = [];
+$filter = isset($_GET['filter']) && is_string($_GET['filter']) ? $_GET['filter'] : 'all';
+if (!in_array($filter, ['all', 'negative', 'open'], true)) {
+    $filter = 'all';
 }
+$average = '0.0';
+$databaseUnavailable = false;
 
-$feedback_per_vestiging = [];
-foreach (get_vestigingen() as $vestiging_id => $vestiging_naam) {
-    $feedback_per_vestiging[$vestiging_id] = [
-        'naam' => $vestiging_naam,
-        'feedback' => [],
-        'totaal_score' => 0,
-    ];
-}
-
-foreach ($all_feedback as $item) {
-    $vestiging_id = (int)($item['vestiging_id'] ?? 0);
-    if (!isset($feedback_per_vestiging[$vestiging_id])) {
-        $feedback_per_vestiging[$vestiging_id] = [
-            'naam' => get_vestiging_naam($vestiging_id),
-            'feedback' => [],
-            'totaal_score' => 0,
-        ];
+try {
+    $manager = currentManager();
+    if ($manager === null) {
+        header('Location: login.php', true, 303);
+        exit;
     }
 
-    $feedback_per_vestiging[$vestiging_id]['totaal_score'] += (int)$item['score'];
+    $feedback = getManagerFeedback((int)$manager['vestiging_id'], $filter);
+    $average = getManagerAverageScore((int)$manager['vestiging_id']);
+} catch (PDOException $exception) {
+    $databaseUnavailable = true;
 }
 
-foreach ($visible_feedback as $item) {
-    $vestiging_id = (int)($item['vestiging_id'] ?? 0);
-    $feedback_per_vestiging[$vestiging_id]['feedback'][] = $item;
-}
+require __DIR__ . '/includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="nl">
-<head>
-    <meta charset="UTF-8">
-    <title>TableTalk - Manager Dashboard</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 30px; background: #f4f4f4; }
-        .dashboard-header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .score-box { font-size: 24px; color: #2E7D32; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #2E7D32; color: white; }
-        .filter-links { margin-bottom: 15px; }
-        .filter-links a { margin-right: 15px; text-decoration: none; color: #2E7D32; font-weight: bold; }
-        .badge { padding: 5px 10px; border-radius: 4px; color: white; font-weight: bold; }
-        .badge-green { background: #2E7D32; }
-        .badge-orange { background: #FFA000; }
-        .badge-red { background: #D32F2F; }
-        section { margin: 24px 0; }
-        section h2 { margin-bottom: 8px; }
-    </style>
-</head>
-<body>
+<main>
+    <?php if ($databaseUnavailable): ?>
+        <div class="card">
+            <h1>Dashboard tijdelijk niet beschikbaar</h1>
+            <p class="error" role="alert">De gegevens konden niet worden opgehaald. Probeer het opnieuw.</p>
+            <p><a href="dashboard.php?filter=<?= escapeHtml(rawurlencode($filter)) ?>">Opnieuw proberen</a></p>
+        </div>
+    <?php else: ?>
+        <section class="card">
+            <h1>Dashboard - <?= escapeHtml($manager['vestiging_naam']) ?></h1>
+            <p>Gemiddelde score: <strong><?= escapeHtml($average) ?> / 5</strong></p>
+            <p>
+                <a href="dashboard.php?filter=all" <?= $filter === 'all' ? 'aria-current="page"' : '' ?>>Alle feedback</a> |
+                <a href="dashboard.php?filter=negative" <?= $filter === 'negative' ? 'aria-current="page"' : '' ?>>Negatieve scores (1-2)</a> |
+                <a href="dashboard.php?filter=open" <?= $filter === 'open' ? 'aria-current="page"' : '' ?>>Nieuw</a>
+            </p>
+            <p><a class="button" href="qr-codes.php">QR-code voor vragenlijst</a></p>
+            <form action="logout.php" method="post">
+                <input type="hidden" name="csrf_token" value="<?= escapeHtml(csrfToken()) ?>">
+                <button type="submit">Uitloggen</button>
+            </form>
+        </section>
 
-<div class="dashboard-header">
-    <h1>TableTalk Dashboard</h1>
-    <div class="score-box">Gemiddelde Score: <?php echo get_average_score(); ?> / 5.0</div>
-</div>
-
-<div class="filter-links">
-    <a href="dashboard.php?filter=all">Toon alle scores</a>
-    <a href="dashboard.php?filter=negative">Alleen Negatief (1-2 sterren)</a>
-</div>
-
-<?php foreach ($feedback_per_vestiging as $vestiging): ?>
-    <?php
-        $vestiging_feedback = $vestiging['feedback'];
-        $gemiddelde = empty($vestiging_feedback)
-            ? 'n.v.t.'
-            : number_format($vestiging['totaal_score'] / count($vestiging_feedback), 1);
-    ?>
-    <section>
-        <h2><?php echo sanitize($vestiging['naam']); ?></h2>
-        <div class="score-box">Gemiddelde score: <?php echo $gemiddelde; ?> / 5.0</div>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Datum/Tijd</th>
-                    <th>Score</th>
-                    <th>Categorie</th>
-                    <th>Toelichting</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (empty($vestiging_feedback)): ?>
-                    <tr><td colspan="4">Nog geen feedback voor deze vestiging.</td></tr>
-                <?php else: ?>
-                    <?php foreach ($vestiging_feedback as $item):
-                        $bg = 'badge-green';
-                        if ($item['score'] == 3) $bg = 'badge-orange';
-                        if ($item['score'] <= 2) $bg = 'badge-red';
-                    ?>
-                        <tr>
-                            <td><?php echo sanitize($item['aangemaakt_op']); ?></td>
-                            <td><span class="badge <?php echo $bg; ?>"><?php echo (int)$item['score']; ?> Sterren</span></td>
-                            <td><?php echo sanitize($item['categorie']); ?></td>
-                            <td><?php echo sanitize($item['toelichting']); ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </tbody>
-        </table>
-    </section>
-<?php endforeach; ?>
-
-</body>
-</html>
+        <section class="card" style="margin-top: 20px;">
+            <h2>Feedback</h2>
+            <?php if ($feedback === []): ?>
+                <p class="muted">Geen feedback gevonden voor dit filter.</p>
+            <?php else: ?>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Datum/tijd</th>
+                                <th>Score</th>
+                                <th>Categorie</th>
+                                <th>Toelichting</th>
+                                <th>Status</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($feedback as $item): ?>
+                                <tr>
+                                    <td><?= escapeHtml($item['aangemaakt_op']) ?></td>
+                                    <td><?= (int)$item['score'] ?> / 5</td>
+                                    <td><?= escapeHtml($item['categorie']) ?></td>
+                                    <td><?= escapeHtml(mb_strimwidth($item['beschrijving'], 0, 120, '…')) ?></td>
+                                    <td><?= escapeHtml($item['status']) ?></td>
+                                    <td><a href="detail.php?id=<?= (int)$item['id'] ?>">Open feedback</a></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+        </section>
+    <?php endif; ?>
+</main>
+<?php require __DIR__ . '/includes/footer.php'; ?>

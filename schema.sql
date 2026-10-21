@@ -5,22 +5,21 @@ CREATE DATABASE IF NOT EXISTS tabletalk
 USE tabletalk;
 
 CREATE TABLE IF NOT EXISTS vestigingen (
-    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    naam VARCHAR(150) NOT NULL,
-    slug VARCHAR(120) NOT NULL,
-    aangemaakt_op TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    UNIQUE KEY uq_vestigingen_slug (slug)
+    id INT NOT NULL AUTO_INCREMENT,
+    naam VARCHAR(100) NOT NULL,
+    actief TINYINT(1) NOT NULL DEFAULT 1,
+    PRIMARY KEY (id)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS admins (
-    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    vestiging_id INT UNSIGNED NOT NULL,
-    gebruikersnaam VARCHAR(100) NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    aangemaakt_op TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    id INT NOT NULL AUTO_INCREMENT,
+    vestiging_id INT NOT NULL,
+    naam VARCHAR(100) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    wachtwoord_hash VARCHAR(255) NOT NULL,
+    actief TINYINT(1) NOT NULL DEFAULT 1,
     PRIMARY KEY (id),
-    UNIQUE KEY uq_admins_gebruikersnaam (gebruikersnaam),
+    UNIQUE KEY uq_admins_email (email),
     KEY idx_admins_vestiging (vestiging_id),
     CONSTRAINT fk_admins_vestiging
         FOREIGN KEY (vestiging_id) REFERENCES vestigingen (id)
@@ -28,14 +27,17 @@ CREATE TABLE IF NOT EXISTS admins (
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS feedback (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    vestiging_id INT UNSIGNED NOT NULL,
+    id INT NOT NULL AUTO_INCREMENT,
+    vestiging_id INT NOT NULL,
     score TINYINT UNSIGNED NOT NULL,
-    categorie VARCHAR(60) NOT NULL,
-    beschrijving TEXT NOT NULL,
+    categorie ENUM('Eten', 'Bediening', 'Sfeer') NOT NULL,
+    toelichting TEXT NOT NULL,
     status ENUM('Nieuw', 'Gelezen', 'Actie ondernomen') NOT NULL DEFAULT 'Nieuw',
-    aangemaakt_op TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    submission_token CHAR(64) NOT NULL,
+    aangemaakt_op DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    bijgewerkt_op DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
+    UNIQUE KEY uq_feedback_submission_token (submission_token),
     KEY idx_feedback_vestiging_datum (vestiging_id, aangemaakt_op),
     KEY idx_feedback_vestiging_score (vestiging_id, score),
     CONSTRAINT fk_feedback_vestiging
