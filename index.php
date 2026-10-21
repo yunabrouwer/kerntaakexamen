@@ -92,7 +92,7 @@ if ($establishment !== null && empty($_SESSION['feedback_submission_token'])) {
 require __DIR__ . '/includes/header.php';
 ?>
 <main>
-    <div class="card">
+    <div class="card survey-card">
         <?php if ($establishment === null): ?>
             <h1>Feedback</h1>
             <?php if ($generalError !== ''): ?>
@@ -103,7 +103,6 @@ require __DIR__ . '/includes/header.php';
             <?php elseif ($establishments === []): ?>
                 <p class="muted">Er zijn momenteel geen actieve vestigingen.</p>
             <?php else: ?>
-                <p class="muted">Kies de vestiging van uw bezoek. Met een QR-code wordt deze stap automatisch overgeslagen.</p>
                 <form action="index.php" method="get">
                     <div class="field">
                         <label for="vestiging_id">Vestiging</label>
@@ -119,7 +118,7 @@ require __DIR__ . '/includes/header.php';
             <?php endif; ?>
         <?php else: ?>
             <h1>Deel uw ervaring</h1>
-            <p class="muted">Uw mening telt bij <?= escapeHtml($establishment['naam']) ?>.</p>
+            <p class="survey-intro">Uw mening telt bij <?= escapeHtml($establishment['naam']) ?>.</p>
 
             <?php if ($generalError !== ''): ?>
                 <p class="error" role="alert"><?= escapeHtml($generalError) ?></p>

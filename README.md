@@ -48,40 +48,13 @@ For QR codes scanned by guests on another device, set `TABLETALK_BASE_URL` to a 
 
 ## Existing databases
 
-`CREATE TABLE IF NOT EXISTS` does not add columns to tables that already exist. If the database was created from an older version of this repository's `schema.sql`, first migrate its `vestigingen.slug`, `admins.gebruikersnaam`/`password_hash`, and `feedback.beschrijving` columns. Replace the example email with a real, unique manager email for each account:
-
-```sql
-UPDATE admins SET gebruikersnaam = 'manager@example.nl' WHERE id = 1;
-ALTER TABLE vestigingen
-    ADD COLUMN actief TINYINT(1) NOT NULL DEFAULT 1,
-    MODIFY slug VARCHAR(120) NULL;
-ALTER TABLE admins
-    CHANGE COLUMN gebruikersnaam email VARCHAR(255) NOT NULL,
-    CHANGE COLUMN password_hash wachtwoord_hash VARCHAR(255) NOT NULL,
-    ADD COLUMN actief TINYINT(1) NOT NULL DEFAULT 1;
-ALTER TABLE feedback
-    CHANGE COLUMN beschrijving toelichting TEXT NOT NULL;
-```
-
-Then, for any existing installation, add the unique submission token. Existing feedback records are retained:
-
-```sql
-ALTER TABLE feedback
-    ADD COLUMN submission_token CHAR(64) NULL;
-UPDATE feedback
-    SET submission_token = SHA2(CONCAT('legacy-', id), 256)
-    WHERE submission_token IS NULL;
-ALTER TABLE feedback
-    MODIFY submission_token CHAR(64) NOT NULL,
-    ADD UNIQUE KEY uq_feedback_submission_token (submission_token);
-```
-
-The former JSON records in `feedback.txt` are not imported automatically; keep that file as a backup if you need those records.
+`CREATE TABLE IF NOT EXISTS` does not update existing tables. Back up the database before upgrading an older installation, compare its columns and constraints with `schema.sql`, and apply a migration written for that specific starting schema. Do not run generic `ALTER TABLE` statements blindly: older project versions may use different column names. The former JSON records in `feedback.txt` are not imported automatically; keep that file as a backup if you need those records.
 
 ## User flows
 
 - Guest surveys are only served for active establishments. The server validates required fields and rechecks the establishment when saving. Prepared statements store feedback in MySQL, and a unique submission token plus a disabled submit button limits duplicate submissions.
 - Manager accounts use password hashes, active-account checks, session expiry after 30 minutes of inactivity, and a vestiging association. The dashboard and detail endpoint scope every feedback query and status update to the manager's own establishment.
+- Managers can filter feedback by all, negative scores, new feedback, or feedback received in the current Monday-to-Sunday week. The comparison page exposes aggregate statistics only, not individual feedback from other establishments.
 - The guest form retains valid input after validation errors. Database errors are shown as a retryable generic error; manager login errors do not reveal whether an account exists.
 
 Use HTTPS in production so session cookies are transmitted securely. Configure database credentials through the environment rather than committing them to the project.

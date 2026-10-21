@@ -101,17 +101,6 @@ try {
 $establishment = $manager === null ? null : ['naam' => $manager['vestiging_naam']];
 require __DIR__ . '/includes/header.php';
 ?>
-<style>
-    .qr-card { max-width: 520px; margin: 0 auto; text-align: center; }
-    .qr-image { display: block; width: min(100%, 320px); height: auto; margin: 20px auto; image-rendering: pixelated; }
-    .survey-url { overflow-wrap: anywhere; }
-    @media print {
-        .site-header, .site-footer, .no-print { display: none !important; }
-        body { background: #fff; }
-        main { width: 100%; margin: 0; }
-        .card { border: 0; box-shadow: none; }
-    }
-</style>
 <main>
     <section class="card qr-card">
         <h1>QR-code voor de vragenlijst</h1>

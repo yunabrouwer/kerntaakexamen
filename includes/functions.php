@@ -152,6 +152,8 @@ function getManagerFeedback(int $establishmentId, string $filter): array
         $where .= ' AND score <= 2';
     } elseif ($filter === 'open') {
         $where .= " AND status = 'Nieuw'";
+    } elseif ($filter === 'week') {
+        $where .= ' AND YEARWEEK(aangemaakt_op, 3) = YEARWEEK(CURRENT_DATE(), 3)';
     }
 
     $statement = database()->prepare(
@@ -173,6 +175,30 @@ function getManagerAverageScore(int $establishmentId): string
     $average = $statement->fetchColumn();
 
     return $average === null ? '0.0' : number_format((float)$average, 1);
+}
+
+function getEstablishmentFeedbackComparison(): array
+{
+    $statement = database()->query(
+        'SELECT v.id, v.naam,
+                COUNT(f.id) AS feedback_aantal,
+                COALESCE(ROUND(AVG(f.score), 1), 0) AS gemiddelde_score,
+                COALESCE(SUM(f.score = 1), 0) AS score_1,
+                COALESCE(SUM(f.score = 2), 0) AS score_2,
+                COALESCE(SUM(f.score = 3), 0) AS score_3,
+                COALESCE(SUM(f.score = 4), 0) AS score_4,
+                COALESCE(SUM(f.score = 5), 0) AS score_5,
+                COALESCE(SUM(f.categorie = \'Eten\'), 0) AS categorie_eten,
+                COALESCE(SUM(f.categorie = \'Bediening\'), 0) AS categorie_bediening,
+                COALESCE(SUM(f.categorie = \'Sfeer\'), 0) AS categorie_sfeer
+         FROM vestigingen v
+         LEFT JOIN feedback f ON f.vestiging_id = v.id
+         WHERE v.actief = 1
+         GROUP BY v.id, v.naam
+         ORDER BY gemiddelde_score DESC, v.naam ASC'
+    );
+
+    return $statement->fetchAll();
 }
 
 function getManagerFeedbackItem(int $feedbackId, int $establishmentId): ?array

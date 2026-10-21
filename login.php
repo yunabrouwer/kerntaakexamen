@@ -45,7 +45,7 @@ try {
 require __DIR__ . '/includes/header.php';
 ?>
 <main>
-    <div class="card" style="max-width: 440px; margin: 0 auto;">
+    <div class="card login-card">
         <h1>Manager login</h1>
         <?php if (isset($_SESSION['manager_session_expired'])): ?>
             <p class="error" role="alert">Uw sessie is verlopen. Log opnieuw in om verder te gaan.</p>

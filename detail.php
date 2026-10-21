@@ -31,7 +31,7 @@ try {
             $feedbackItem = null;
             http_response_code(404);
         } else {
-            header('Location: detail.php?id=' . $feedbackId, true, 303);
+            header('Location: dashboard.php', true, 303);
             exit;
         }
     }
@@ -39,12 +39,12 @@ try {
     $databaseUnavailable = true;
 }
 
-$establishment = $manager === null ? null : ['naam' => $manager['vestiging_naam']];
+$establishment = null;
 require __DIR__ . '/includes/header.php';
 ?>
 <main>
     <?php if ($databaseUnavailable): ?>
-        <div class="card">
+        <div class="card detail-card">
             <h1>Feedbackdetails tijdelijk niet beschikbaar</h1>
             <p class="error" role="alert">De gegevens konden niet worden opgehaald of opgeslagen. Probeer het opnieuw.</p>
             <p><a href="detail.php?id=<?= (int)$feedbackId ?>">Opnieuw proberen</a> · <a href="dashboard.php">Terug naar overzicht</a></p>
@@ -60,31 +60,38 @@ require __DIR__ . '/includes/header.php';
         <div class="card">
             <h1>Feedbackdetails</h1>
             <?php if ($error !== ''): ?>
-                <p class="error" role="alert"><?= escapeHtml($error) ?></p>
+                <p class="error alert" role="alert"><?= escapeHtml($error) ?></p>
             <?php endif; ?>
-            <p><strong>Toelichting</strong></p>
-            <p style="white-space: pre-line;"><?= escapeHtml($feedbackItem['beschrijving']) ?></p>
+            <div class="detail-layout">
+                <section>
+                    <h2>Toelichting</h2>
+                    <p class="feedback-copy"><?= escapeHtml($feedbackItem['beschrijving']) ?></p>
+                </section>
+                <aside>
+                    <h2>Metadata</h2>
+                    <dl class="metadata">
+                        <dt>Score</dt>
+                        <dd><?= (int)$feedbackItem['score'] ?> / 5 sterren</dd>
+                        <dt>Categorie</dt>
+                        <dd><?= escapeHtml($feedbackItem['categorie']) ?></dd>
+                        <dt>Datum/tijd</dt>
+                        <dd><?= escapeHtml($feedbackItem['aangemaakt_op']) ?></dd>
+                        <dt>Vestiging</dt>
+                        <dd><?= escapeHtml($feedbackItem['vestiging_naam']) ?></dd>
+                        <dt>Huidige status</dt>
+                        <dd><?= escapeHtml($feedbackItem['status']) ?></dd>
+                    </dl>
+                </aside>
+            </div>
 
-            <h2>Metadata</h2>
-            <dl>
-                <dt>Score</dt>
-                <dd><?= (int)$feedbackItem['score'] ?> / 5 sterren</dd>
-                <dt>Categorie</dt>
-                <dd><?= escapeHtml($feedbackItem['categorie']) ?></dd>
-                <dt>Datum/tijd</dt>
-                <dd><?= escapeHtml($feedbackItem['aangemaakt_op']) ?></dd>
-                <dt>Vestiging</dt>
-                <dd><?= escapeHtml($feedbackItem['vestiging_naam']) ?></dd>
-                <dt>Huidige status</dt>
-                <dd><?= escapeHtml($feedbackItem['status']) ?></dd>
-            </dl>
-
-            <h2>Status aanpassen</h2>
-            <form action="detail.php?id=<?= (int)$feedbackItem['id'] ?>" method="post">
-                <input type="hidden" name="csrf_token" value="<?= escapeHtml(csrfToken()) ?>">
-                <button type="submit" name="nieuwe_status" value="Gelezen">Gelezen</button>
-                <button type="submit" name="nieuwe_status" value="Actie ondernomen">Actie ondernomen</button>
-            </form>
+            <section class="detail-actions">
+                <h2>Status aanpassen</h2>
+                <form action="detail.php?id=<?= (int)$feedbackItem['id'] ?>" method="post">
+                    <input type="hidden" name="csrf_token" value="<?= escapeHtml(csrfToken()) ?>">
+                    <button type="submit" name="nieuwe_status" value="Gelezen">Gelezen</button>
+                    <button class="button-secondary" type="submit" name="nieuwe_status" value="Actie ondernomen">Actie ondernomen</button>
+                </form>
+            </section>
         </div>
     <?php endif; ?>
 </main>

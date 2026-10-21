@@ -30,6 +30,9 @@ config.local.php
 **/config.local.php
 *.local.php
 auth.json
+/key
+/test-login.txt
+/github.txt
 
 # --- PHP / Composer ---
 /vendor/
